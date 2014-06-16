@@ -1,11 +1,34 @@
 from PyQt4 import uic
 from PyQt4 import QtGui, QtCore
 from clt.ramps import ramp_dict
+from clt import ramps
+from clt import barrierclient
+import numpy as np
 
 Ui_Shaper, QWidget = uic.loadUiType("ui/Shaper.ui")
 
 # number of bins to split the waveform into
 N_BINS = 25
+
+
+class Uploader(QtCore.QObject):
+
+    finished = QtCore.pyqtSignal()
+    progress = QtCore.pyqtSignal(int)
+
+    def __init__(self, addresses, values):
+        self.addresses = addresses
+        self.values = values
+        self.sockobj = barrierclient.upload_points(addresses, values)
+        super(Uploader, self).__init__()
+
+    def longRunning(self):
+        for i in range(len(self.addresses)):
+            print(barrierclient.recv_string(self.sockobj))
+            self.progress.emit(i)
+
+        self.sockobj.close()
+        self.finished.emit()
 
 
 class MySpinBox(QtGui.QSpinBox):
@@ -25,6 +48,8 @@ class MySpinBox(QtGui.QSpinBox):
 class Shaper(QWidget, Ui_Shaper):
     """Widget to handle all uploading to FPGA circuit."""
 
+    finishedUploading = QtCore.pyqtSignal()
+
     def __init__(self, settings, parent):
         super(Shaper, self).__init__(parent=parent)
         self.settings = settings
@@ -40,6 +65,9 @@ class Shaper(QWidget, Ui_Shaper):
         for key in ramp_dict:
             self.rampListCombo.addItem(key)
 
+        self.old_ramp = None
+        self.interpTypeCombo.addItems(ramps.interp_types)
+        self.progressBar.reset()
 
     def addSpinBoxes(self):
         self.spin_boxes = [MySpinBox(self) for i in range(N_BINS)]
@@ -58,10 +86,61 @@ class Shaper(QWidget, Ui_Shaper):
             sb.valueChanged.disconnect(self.handleSpinBoxValueChanged)
 
     def handleUploadAll(self):
-        print('upload all')
+        self.handleUpload(only_changes=False)
 
     def handleUploadChanges(self):
-        print('upload changes')
+        self.handleUpload(only_changes=True)
+
+    def handleFinishedUploading(self):
+        self.progressBar.reset()
+        self.finishedUploading.emit()
+
+    def handleUpload(self, only_changes=False):
+        min_value = self.minVoltageSpinBox.value()
+        max_value = self.maxVoltageSpinBox.value()
+        interpolation = str(self.interpTypeCombo.currentText())
+        addr, val = ramps.make_full_ramp(self.sb_values, 1000,
+                                         minValue=min_value,
+                                         maxValue=max_value,
+                                         interpolation=interpolation)
+        if only_changes is True and self.old_ramp is not None:
+            u_addr = addr
+            u_val = val
+            old_val = self.old_ramp[1]
+            is_different = old_val != val
+            n_upload = np.sum(is_different)
+            if n_upload == 0:
+                # no changes
+                self.progressBar.reset()
+                return
+            u_addr = np.zeros(n_upload)
+            u_val = np.zeros(n_upload)
+            index = 0
+            for a, v, is_d in zip(addr, val, is_different):
+                if is_d:
+                    u_addr[index] = a
+                    u_val[index] = v
+                    index += 1
+        else:
+            u_addr = addr
+            u_val = val
+
+        print(barrierclient.get_upload_string(u_addr, u_val))
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(len(u_addr))
+        self.progressBar.reset()
+
+        uploader_thread = QtCore.QThread(parent=self)
+        self.uploader = Uploader(u_addr, u_val)
+        self.uploader.progress.connect(self.progressBar.setValue)
+        self.uploader.moveToThread(uploader_thread)
+        self.uploader.finished.connect(uploader_thread.quit)
+        uploader_thread.started.connect(self.uploader.longRunning)
+        uploader_thread.finished.connect(self.handleFinishedUploading)
+        uploader_thread.start()
+        self.old_ramp = (addr, val)
+
+
 
     def saveSettings(self):
         self.settings.beginGroup('shaper')
