@@ -1,5 +1,6 @@
 from PyQt4 import uic
 from PyQt4 import QtGui, QtCore
+from clt.ramps import ramp_dict
 
 Ui_Shaper, QWidget = uic.loadUiType("ui/Shaper.ui")
 
@@ -35,6 +36,11 @@ class Shaper(QWidget, Ui_Shaper):
         self.loadSettings()
         self.connectSlots()
 
+        # Fill up comboBox with ramp items
+        for key in ramp_dict:
+            self.rampListCombo.addItem(key)
+
+
     def addSpinBoxes(self):
         self.spin_boxes = [MySpinBox(self) for i in range(N_BINS)]
         for sb in self.spin_boxes:
@@ -54,14 +60,29 @@ class Shaper(QWidget, Ui_Shaper):
     def handleUploadAll(self):
         print('upload all')
 
+    def handleUploadChanges(self):
+        print('upload changes')
+
     def saveSettings(self):
         self.settings.beginGroup('shaper')
         self.settings.setValue('sb_values', repr(self.sb_values))
+        min_voltage = self.minVoltageSpinBox.value()
+        max_voltage = self.maxVoltageSpinBox.value()
+        print('min_voltage', min_voltage)
+        print('max_voltage', max_voltage)
+        self.settings.setValue('min_voltage', min_voltage)
+        self.settings.setValue('max_voltage', max_voltage)
         self.settings.endGroup()
 
     def loadSettings(self):
         self.settings.beginGroup('shaper')
         sb_string = str(self.settings.value('sb_values').toString())
+        min_voltage = self.settings.value('min_voltage', type=int,
+                                          defaultValue=0)
+        max_voltage = self.settings.value('max_voltage', type=int,
+                                          defaultValue=1000)
+        self.minVoltageSpinBox.setValue(min_voltage)
+        self.maxVoltageSpinBox.setValue(max_voltage)
         if sb_string is not "":
             self.sb_values = eval(sb_string)
             self.updateSpinBoxes()
@@ -83,3 +104,8 @@ class Shaper(QWidget, Ui_Shaper):
         print(index_changed)
         self.sb_values = all_new_values
 
+    def handleResetRamp(self):
+        print('reset ramp')
+        ramp_func = ramp_dict[str(self.rampListCombo.currentText())]
+        self.sb_values = ramp_func(N_BINS)
+        self.updateSpinBoxes()
