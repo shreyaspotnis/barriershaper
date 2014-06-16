@@ -6,6 +6,7 @@ Ui_Shaper, QWidget = uic.loadUiType("ui/Shaper.ui")
 # number of bins to split the waveform into
 N_BINS = 25
 
+
 class Shaper(QWidget, Ui_Shaper):
     """Widget to handle all uploading to FPGA circuit."""
 
@@ -22,3 +23,6 @@ class Shaper(QWidget, Ui_Shaper):
 
     def handleUploadAll(self):
         print('upload all')
+
+    def saveSettings(self):
+        print('shaper save settings')
