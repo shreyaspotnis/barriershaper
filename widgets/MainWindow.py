@@ -1,7 +1,7 @@
 from PyQt4 import uic
 from pyqtgraph.dockarea import DockArea, Dock
 
-from widgets import Shaper
+from widgets import Shaper, ImageView, RoiEditor
 
 Ui_MainWindow, QMainWindow = uic.loadUiType("ui/MainWindow.ui")
 
@@ -24,9 +24,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def createDocks(self):
         self.shaper = Shaper(self.settings, self)
+        self.image_view = ImageView(self.settings, self)
+        self.roi_editor = RoiEditor(self.settings, self.image_view, self)
 
         self.dock_shaper = Dock('Shaper', widget=self.shaper)
-        self.dock_area.addDock(self.dock_shaper, position='top')
+        self.dock_image_view = Dock('ImageView', widget=self.image_view)
+        self.dock_roi_editor = Dock('RoiEditor', widget=self.roi_editor)
+        self.dock_area.addDock(self.dock_image_view, position='top')
+        self.dock_area.addDock(self.dock_roi_editor, position='bottom', relativeTo=self.dock_image_view)
+        self.dock_area.addDock(self.dock_shaper, position='right', relativeTo=self.dock_image_view)
 
     def loadSettings(self):
         """Load window state from self.settings"""
