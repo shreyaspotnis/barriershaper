@@ -1,9 +1,36 @@
 from PyQt4 import uic
+from PyQt4 import QtCore
 from pyqtgraph.dockarea import DockArea, Dock
 
 from widgets import Shaper, ImageView, RoiEditor
+from clt import camera
+import time
 
 Ui_MainWindow, QMainWindow = uic.loadUiType("ui/MainWindow.ui")
+
+
+class FrameGrabber(QtCore.QObject):
+    """A background thread that grabs frames and emits them."""
+
+    finished = QtCore.pyqtSignal()
+    framegrabbed = QtCore.pyqtSignal(object)
+
+    def __init__(self):
+        super(FrameGrabber, self).__init__()
+        camera.start_continuous_acquisition()
+
+    def longRunning(self):
+        sleep_time = 0.05
+        while(1):
+            self.framegrabbed.emit(camera.get_image())
+            print('frame grabbed')
+            time.sleep(sleep_time)
+
+        self.finished.emit()
+
+    def close(self):
+        camera.close_everything()
+        self.finished.emit()
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -21,6 +48,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.createDocks()
         self.loadSettings()
+        self.setupAcquisition()
+
+    def setupAcquisition(self):
+        camera_thread = QtCore.QThread(parent=self)
+        self.frame_grabber = FrameGrabber()
+        self.frame_grabber.moveToThread(camera_thread)
+        self.frame_grabber.framegrabbed.connect(self.image_view.handleImageChanged)
+        self.frame_grabber.finished.connect(camera_thread.quit)
+        camera_thread.started.connect(self.frame_grabber.longRunning)
+        camera_thread.start()
 
     def createDocks(self):
         self.shaper = Shaper(self.settings, self)
@@ -64,4 +101,5 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         self.saveSettings()
         self.shaper.saveSettings()
+        self.frame_grabber.close()
         super(MainWindow, self).closeEvent(event)
