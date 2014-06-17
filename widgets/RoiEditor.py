@@ -29,8 +29,10 @@ class RoiEditor(QWidget, Ui_RoiEditor):
 
         self.roiNameLabel.setText(name)
 
-        iv = self.loadValues()
-        self.iv = iv
+        initValues = self.loadValues()
+        self.iv = initValues[0]
+        iv = self.iv
+        self.hvCombo.setCurrentIndex(initValues[1])
 
         self.updatePState(iv)
         self.updateWState(iv)
@@ -56,12 +58,13 @@ class RoiEditor(QWidget, Ui_RoiEditor):
         if roi_string is not "":
             initValues = eval(roi_string)
         else:
-            initValues = [0, 0, 100, 100]
+            initValues = ([0, 0, 100, 100], 0)
         self.settings.endGroup()
         return initValues
 
     def saveSettings(self):
-        val = [sb.value() for sb in self.pSB]
+        # val = [sb.value() for sb in self.pSB]
+        val = self.getROI()
         self.settings.beginGroup('RoiEditor'+self.name)
         self.settings.setValue('roi', repr(val))
         self.settings.endGroup()

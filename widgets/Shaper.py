@@ -63,6 +63,8 @@ class Shaper(QWidget, Ui_Shaper):
 
         self.sb_values = [0 for i in range(N_BINS)]
 
+        self.old_ramp = None
+
         self.addSpinBoxes()
         self.loadSettings()
         self.connectSlots()
@@ -71,10 +73,10 @@ class Shaper(QWidget, Ui_Shaper):
         for key in ramp_dict:
             self.rampListCombo.addItem(key)
 
-        self.old_ramp = None
         self.interpTypeCombo.addItems(ramps.interp_types)
         self.uploading = False
         self.progressBar.reset()
+        print(self.old_ramp)
 
     def addSpinBoxes(self):
         self.spin_boxes = [MySpinBox(self) for i in range(N_BINS)]
@@ -173,7 +175,6 @@ class Shaper(QWidget, Ui_Shaper):
         uploader_thread.start()
         self.old_ramp = (addr, val)
 
-
     def saveSettings(self):
         self.settings.beginGroup('shaper')
         self.settings.setValue('sb_values', repr(self.sb_values))
@@ -181,6 +182,8 @@ class Shaper(QWidget, Ui_Shaper):
         max_voltage = self.maxVoltageSpinBox.value()
         self.settings.setValue('min_voltage', min_voltage)
         self.settings.setValue('max_voltage', max_voltage)
+        old_ramp_save = [list(self.old_ramp[0]), list(self.old_ramp[1])]
+        self.settings.setValue('old_ramp', repr(old_ramp_save))
         self.settings.endGroup()
 
     def loadSettings(self):
@@ -195,8 +198,14 @@ class Shaper(QWidget, Ui_Shaper):
         if sb_string is not "":
             self.sb_values = eval(sb_string)
             self.updateSpinBoxes()
+        old_ramp_string = str(self.settings.value('old_ramp').toString())
         self.settings.endGroup()
         self.bins_changed.emit(self.sb_values)
+
+        if old_ramp_string is not "":
+            old_ramp_load = eval(old_ramp_string)
+            self.old_ramp = (np.array(old_ramp_load[0], dtype=int),
+                             np.array(old_ramp_load[1], dtype=int))
 
     def updateSpinBoxes(self):
         for sb, v in zip(self.spin_boxes, self.sb_values):

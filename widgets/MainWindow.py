@@ -66,18 +66,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.roi_editor = RoiEditor(self.settings, self.image_view, self)
         self.optimizer = Optimizer(self.settings, self)
         self.plot_1d = Plot1d(self, 'ROI')
+        self.plot_1d_optimize = Plot1d(self, 'ROI')
 
         self.dock_shaper = Dock('Shaper', widget=self.shaper)
         self.dock_image_view = Dock('ImageView', widget=self.image_view)
         self.dock_roi_editor = Dock('RoiEditor', widget=self.roi_editor)
         self.dock_optimizer = Dock('Optimizer', widget=self.optimizer)
         self.dock_plot_1d = Dock('Plot1d', widget=self.plot_1d)
+        self.dock_plot_1d_optimize = Dock('Plot1d Optimize',
+                                          widget=self.plot_1d_optimize)
 
         self.dock_area.addDock(self.dock_image_view, position='top')
         self.dock_area.addDock(self.dock_roi_editor, position='bottom', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_shaper, position='right', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_optimizer, position='left', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_plot_1d, position='bottom', relativeTo=self.dock_image_view)
+        self.dock_area.addDock(self.dock_plot_1d_optimize, position='bottom', relativeTo=self.dock_plot_1d)
 
     def connectSlots(self):
         self.shaper.finishedUploading.connect(self.optimizer.handleReadyToUpload)
@@ -85,6 +89,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.shaper.bins_changed.connect(self.optimizer.handleBinsChanged)
         self.optimizer.handleBinsChanged(self.shaper.sb_values)
         self.optimizer.change_bins.connect(self.shaper.changeBins)
+        self.optimizer.plot_optimize_region.connect(self.plot_1d_optimize.handleDataChanged)
 
     def loadSettings(self):
         """Load window state from self.settings"""
@@ -118,6 +123,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.shaper.saveSettings()
         #self.frame_grabber.close()
         self.roi_editor.saveSettings()
+        self.optimizer.saveSettings()
         super(MainWindow, self).closeEvent(event)
 
     def handleFrameGrabbed(self, new_image):
@@ -125,4 +131,4 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         roi = self.roi_editor.getROI()
         roi_slice = imtools.getROISlice(new_image, roi)
         self.plot_1d.handleDataChanged(x=None, data=roi_slice[1], fit=None)
-        self.optimizer.handleImageChanged(roi_slice)
+        self.optimizer.handleImageChanged(roi_slice[1])
