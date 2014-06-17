@@ -2,7 +2,7 @@ from PyQt4 import uic
 from PyQt4 import QtCore
 from pyqtgraph.dockarea import DockArea, Dock
 
-from widgets import Shaper, ImageView, RoiEditor
+from widgets import Shaper, ImageView, RoiEditor, Optimizer, Plot1d
 from clt import camera
 import time
 
@@ -63,13 +63,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.shaper = Shaper(self.settings, self)
         self.image_view = ImageView(self.settings, self)
         self.roi_editor = RoiEditor(self.settings, self.image_view, self)
+        self.optimizer = Optimizer(self.settings, self)
+        self.plot_1d = Plot1d(self, 'ROI')
 
         self.dock_shaper = Dock('Shaper', widget=self.shaper)
         self.dock_image_view = Dock('ImageView', widget=self.image_view)
         self.dock_roi_editor = Dock('RoiEditor', widget=self.roi_editor)
+        self.dock_optimizer = Dock('Optimizer', widget=self.optimizer)
+        self.dock_plot_1d = Dock('Optimizer', widget=self.plot_1d)
+
         self.dock_area.addDock(self.dock_image_view, position='top')
         self.dock_area.addDock(self.dock_roi_editor, position='bottom', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_shaper, position='right', relativeTo=self.dock_image_view)
+        self.dock_area.addDock(self.dock_optimizer, position='left', relativeTo=self.dock_image_view)
+        self.dock_area.addDock(self.dock_plot_1d, position='bottom', relativeTo=self.dock_image_view)
 
     def loadSettings(self):
         """Load window state from self.settings"""
@@ -102,4 +109,5 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.saveSettings()
         self.shaper.saveSettings()
         self.frame_grabber.close()
+        self.roi_editor.saveSettings()
         super(MainWindow, self).closeEvent(event)

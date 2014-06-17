@@ -20,6 +20,8 @@ def triangle(n_bins):
 def rand(n_bins):
     return [int(random() * 100) for _ in range(n_bins)]
 
+def fiftypercent(n_bins):
+    return [50] * n_bins
 
 def make_full_ramp(short_ramp, n_full, minValue=0, maxValue=100,
                    interpolation='nearest'):
@@ -50,5 +52,5 @@ def make_full_ramp(short_ramp, n_full, minValue=0, maxValue=100,
     return (addresses, values)
 
 
-ramp_dict = {'square': square, 'triangle': triangle, 'rand': rand}
+ramp_dict = {'square': square, 'triangle': triangle, 'rand': rand, 'fiftypercent': fiftypercent}
 interp_types = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
