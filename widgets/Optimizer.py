@@ -21,7 +21,9 @@ class Optimizer(QWidget, Ui_Optimizer):
         self.image_slice = None
         self.ready_to_upload = True
         self.bin_values = None
+        self.prev_iterations = []
         self.loadSettings()
+        self.n_iteration = 0
 
     def handleImageChanged(self, new_image_slice):
         new_data = np.array(new_image_slice, dtype=float)
@@ -65,13 +67,50 @@ class Optimizer(QWidget, Ui_Optimizer):
 
     def handleBinsChanged(self, new_bin_values):
         self.bin_values = list(new_bin_values)
+        self.prev_iterations = []
 
     def handleIterate(self):
         if self.ready_to_upload:
             # take the average of all images picked up until now
             self.image_slice /= self.n_added
-            print('ITERATION')
-            print('n_added', self.n_added)
+            self.log('Iteration number: ' + str(self.n_iteration))
+
+            # find how well we did in the prev. iteration
+            start_index = int(self.startPixelSpin.value())
+            width = int(self.widthSpin.value())
+            end_index = min(start_index + width, len(self.image_slice))
+            roi_data = self.image_slice[start_index:end_index]
+            mean_roi_data = np.mean(roi_data)
+            max_roi_data = np.max(roi_data)
+            sd_roi_data = np.std(roi_data)
+            sd_over_mean = sd_roi_data / mean_roi_data
+
+            # build up a packet of info
+            prev_iter = (list(self.bin_values), mean_roi_data, max_roi_data,
+                         sd_roi_data, sd_over_mean)
+            self.prev_iterations.append(prev_iter)
+
+            self.log('mutation #' + str(len(self.prev_iterations)))
+            if len(self.prev_iterations) > 5:
+                # sort according to sd_over_mean
+                sorted_iterations = sorted(self.prev_iterations,
+                                           key=lambda prev_it: prev_it[4])
+                self.log('Picking best of 5')
+                for si in sorted_iterations:
+                    self.log(str(si[4]))
+                best_iteration = sorted_iterations[0]
+                self.bin_values = best_iteration[0]
+                self.prev_iterations = []
+
+            if self.liveUpdateCheck.isChecked() is False:
+                self.meanSpin.setValue(mean_roi_data)
+                self.maxSpin.setValue(max_roi_data)
+                self.sdSpin.setValue(sd_roi_data)
+                self.sdOverMeanSpin.setValue(sd_over_mean)
+
+                self.plot_optimize_region.emit(None, roi_data, None)
+
+            # make a new iteration
             jump_size = self.jumpSizeSpin.value()
             n_bins = len(self.bin_values)
             bin_to_modify = random.randint(0, n_bins - 1)
@@ -86,7 +125,9 @@ class Optimizer(QWidget, Ui_Optimizer):
             self.change_bins.emit(self.bin_values)
 
             self.image_slice = None
-            n_added = 0
+            self.n_added = 0
+            self.n_iteration += 1
+            self.log('\n')
         else:
             print('Not ready to upload')
 
@@ -114,3 +155,5 @@ class Optimizer(QWidget, Ui_Optimizer):
         self.settings.setValue('jump_size', jump_size)
         self.settings.endGroup()
 
+    def log(self, new_msg):
+        self.iterationLog.appendPlainText(new_msg)

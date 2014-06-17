@@ -17,9 +17,9 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>210</y>
+     <y>240</y>
      <width>160</width>
-     <height>641</height>
+     <height>631</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="spinBoxLayout">
@@ -34,10 +34,24 @@
      <x>10</x>
      <y>10</y>
      <width>202</width>
-     <height>188</height>
+     <height>217</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
+    <item row="5" column="1">
+     <widget class="QPushButton" name="sortButton">
+      <property name="text">
+       <string>Sort</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QPushButton" name="resetStateButton">
+      <property name="text">
+       <string>Reset state</string>
+      </property>
+     </widget>
+    </item>
     <item row="3" column="1">
      <widget class="QSpinBox" name="maxVoltageSpinBox">
       <property name="maximum">
@@ -83,7 +97,7 @@
       </property>
      </widget>
     </item>
-    <item row="6" column="0" colspan="2">
+    <item row="7" column="0" colspan="2">
      <widget class="QProgressBar" name="progressBar">
       <property name="value">
        <number>24</number>
@@ -107,10 +121,17 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="0">
-     <widget class="QPushButton" name="resetStateButton">
+    <item row="6" column="0">
+     <widget class="QPushButton" name="copyButton">
       <property name="text">
-       <string>Reset state</string>
+       <string>Copy</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
+     <widget class="QPushButton" name="pasteButton">
+      <property name="text">
+       <string>Paste</string>
       </property>
      </widget>
     </item>
@@ -183,11 +204,62 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>sortButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>handleSort()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>161</x>
+     <y>157</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>190</x>
+     <y>272</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>copyButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>handleCopy()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>69</x>
+     <y>182</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>7</x>
+     <y>219</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pasteButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>handlePaste()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>147</x>
+     <y>187</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>131</x>
+     <y>231</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>handleUploadAll()</slot>
   <slot>handleResetRamp()</slot>
   <slot>handleUploadChanges()</slot>
   <slot>handleResetState()</slot>
+  <slot>handleSort()</slot>
+  <slot>handleCopy()</slot>
+  <slot>handlePaste()</slot>
  </slots>
 </ui>

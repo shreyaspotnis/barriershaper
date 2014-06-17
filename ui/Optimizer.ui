@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>579</height>
+    <height>712</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,10 +16,10 @@
   <widget class="QWidget" name="gridLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>40</y>
-     <width>281</width>
-     <height>382</height>
+     <x>20</x>
+     <y>20</y>
+     <width>365</width>
+     <height>671</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
@@ -61,6 +61,13 @@
       </property>
      </widget>
     </item>
+    <item row="7" column="0">
+     <widget class="QCheckBox" name="liveUpdateCheck">
+      <property name="text">
+       <string>Live Update</string>
+      </property>
+     </widget>
+    </item>
     <item row="8" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
@@ -86,6 +93,9 @@
       </property>
       <property name="buttonSymbols">
        <enum>QAbstractSpinBox::NoButtons</enum>
+      </property>
+      <property name="decimals">
+       <number>3</number>
       </property>
       <property name="maximum">
        <double>700000.000000000000000</double>
@@ -220,10 +230,10 @@
       </property>
      </widget>
     </item>
-    <item row="7" column="0">
-     <widget class="QCheckBox" name="liveUpdateCheck">
-      <property name="text">
-       <string>Live Update</string>
+    <item row="12" column="0" colspan="2">
+     <widget class="QPlainTextEdit" name="iterationLog">
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -249,6 +259,7 @@
    <zorder>sdOverMeanSpin</zorder>
    <zorder>label_9</zorder>
    <zorder>liveUpdateCheck</zorder>
+   <zorder>iterationLog</zorder>
   </widget>
   <zorder>gridLayoutWidget</zorder>
   <zorder>meanSpin</zorder>

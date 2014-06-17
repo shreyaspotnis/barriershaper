@@ -21,7 +21,7 @@ class Uploader(QtCore.QObject):
 
         self.addresses = np.array(addresses)
         self.values = np.array(values)
-        print('Sending data')
+        # print('Sending data')
         self.sockobj = barrierclient.upload_points(self.addresses, self.values)
         super(Uploader, self).__init__()
 
@@ -29,7 +29,7 @@ class Uploader(QtCore.QObject):
         for i in range(len(self.addresses)):
             _ = barrierclient.recv_string(self.sockobj)
             self.progress.emit(i)
-        print('revd all data')
+        # print('revd all data')
 
         self.sockobj.close()
         self.finished.emit()
@@ -76,7 +76,7 @@ class Shaper(QWidget, Ui_Shaper):
         self.interpTypeCombo.addItems(ramps.interp_types)
         self.uploading = False
         self.progressBar.reset()
-        print(self.old_ramp)
+        # print(self.old_ramp)
 
     def addSpinBoxes(self):
         self.spin_boxes = [MySpinBox(self) for i in range(N_BINS)]
@@ -109,6 +109,10 @@ class Shaper(QWidget, Ui_Shaper):
         self.uploadChangesButton.setEnabled(True)
         self.uploading = False
 
+        # save stuff in case program crashes
+        self.saveSettings()
+        self.settings.sync()
+
         # add intentional delay before letting everyone else know
         # that we are done uploading.
         QtCore.QTimer.singleShot(300, self.emitFinishedUploading)
@@ -117,20 +121,20 @@ class Shaper(QWidget, Ui_Shaper):
         self.finishedUploading.emit()
 
     def handleUpload(self, only_changes=False):
-        print('Handle upload. self.uploading=', self.uploading)
+        # print('Handle upload. self.uploading=', self.uploading)
         if self.uploading:
-            print('Already uploading, wait until upload is over')
+            # print('Already uploading, wait until upload is over')
             return
 
         min_value = self.minVoltageSpinBox.value()
         max_value = self.maxVoltageSpinBox.value()
         interpolation = str(self.interpTypeCombo.currentText())
-        print('Handle upload: making ramps')
+        # print('Handle upload: making ramps')
         addr, val = ramps.make_full_ramp(self.sb_values, 1000,
                                          minValue=min_value,
                                          maxValue=max_value,
                                          interpolation=interpolation)
-        print('Handle upload: finding changes')
+        # print('Handle upload: finding changes')
         if only_changes is True and self.old_ramp is not None:
             u_addr = addr
             u_val = val
@@ -164,7 +168,7 @@ class Shaper(QWidget, Ui_Shaper):
         self.progressBar.setMaximum(len(u_addr))
         self.progressBar.reset()
 
-        print('Making thread')
+        # print('Making thread')
         uploader_thread = QtCore.QThread(parent=self)
         self.uploader = Uploader(u_addr, u_val)
         self.uploader.progress.connect(self.progressBar.setValue)
@@ -224,7 +228,7 @@ class Shaper(QWidget, Ui_Shaper):
         self.bins_changed.emit(self.sb_values)
 
     def handleResetRamp(self):
-        print('reset ramp')
+        # print('reset ramp')
         ramp_func = ramp_dict[str(self.rampListCombo.currentText())]
         self.sb_values = ramp_func(N_BINS)
         self.disconnectSlots()
@@ -232,11 +236,34 @@ class Shaper(QWidget, Ui_Shaper):
         self.connectSlots()
         self.bins_changed.emit(self.sb_values)
 
+    def handleSort(self):
+        self.sb_values = sorted(self.sb_values)
+        self.disconnectSlots()
+        self.updateSpinBoxes()
+        self.connectSlots()
+        self.bins_changed.emit(self.sb_values)
+
     def changeBins(self, new_bins):
         self.sb_values = list(new_bins)
-        print(len(self.sb_values))
-        print(self.sb_values)
+        # print(len(self.sb_values))
+        # print(self.sb_values)
         self.disconnectSlots()
         self.updateSpinBoxes()
         self.connectSlots()
         self.handleUpload(only_changes=True)
+
+
+    def handleCopy(self):
+        infoString = repr(self.sb_values)
+        clipboard = QtGui.QApplication.clipboard()
+        clipboard.setText(infoString)
+
+    def handlePaste(self):
+        clipboard = QtGui.QApplication.clipboard()
+        infoString = str(clipboard.text())
+        self.sb_values = eval(infoString, {}, {})
+        self.disconnectSlots()
+        self.updateSpinBoxes()
+        self.connectSlots()
+        self.bins_changed.emit(self.sb_values)
+
