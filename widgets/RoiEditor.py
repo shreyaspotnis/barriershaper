@@ -195,3 +195,7 @@ class RoiEditor(QWidget, Ui_RoiEditor):
         V = [pos[0], pos[1], pos[0] + size[0], pos[1] + size[1]]
 
         self.updateAll(V)
+
+    def getROI(self):
+        V = [sb.value() for sb in self.pSB]
+        return (V, self.hvCombo.currentIndex())

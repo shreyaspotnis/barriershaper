@@ -5,6 +5,7 @@ from pyqtgraph.dockarea import DockArea, Dock
 from widgets import Shaper, ImageView, RoiEditor, Optimizer, Plot1d
 from clt import camera
 import time
+from clt import imtools
 
 Ui_MainWindow, QMainWindow = uic.loadUiType("ui/MainWindow.ui")
 
@@ -23,7 +24,6 @@ class FrameGrabber(QtCore.QObject):
         sleep_time = 0.05
         while(1):
             self.framegrabbed.emit(camera.get_image())
-            print('frame grabbed')
             time.sleep(sleep_time)
 
         self.finished.emit()
@@ -49,12 +49,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.createDocks()
         self.loadSettings()
         self.setupAcquisition()
+        self.connectSlots()
 
     def setupAcquisition(self):
         camera_thread = QtCore.QThread(parent=self)
         self.frame_grabber = FrameGrabber()
         self.frame_grabber.moveToThread(camera_thread)
-        self.frame_grabber.framegrabbed.connect(self.image_view.handleImageChanged)
+        self.frame_grabber.framegrabbed.connect(self.handleFrameGrabbed)
         self.frame_grabber.finished.connect(camera_thread.quit)
         camera_thread.started.connect(self.frame_grabber.longRunning)
         camera_thread.start()
@@ -70,13 +71,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.dock_image_view = Dock('ImageView', widget=self.image_view)
         self.dock_roi_editor = Dock('RoiEditor', widget=self.roi_editor)
         self.dock_optimizer = Dock('Optimizer', widget=self.optimizer)
-        self.dock_plot_1d = Dock('Optimizer', widget=self.plot_1d)
+        self.dock_plot_1d = Dock('Plot1d', widget=self.plot_1d)
 
         self.dock_area.addDock(self.dock_image_view, position='top')
         self.dock_area.addDock(self.dock_roi_editor, position='bottom', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_shaper, position='right', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_optimizer, position='left', relativeTo=self.dock_image_view)
         self.dock_area.addDock(self.dock_plot_1d, position='bottom', relativeTo=self.dock_image_view)
+
+    def connectSlots(self):
+        self.shaper.finishedUploading.connect(self.optimizer.handleReadyToUpload)
+        self.shaper.startedUploading.connect(self.optimizer.handleNotReadyToUpload)
+        self.shaper.bins_changed.connect(self.optimizer.handleBinsChanged)
+        self.optimizer.handleBinsChanged(self.shaper.sb_values)
+        self.optimizer.change_bins.connect(self.shaper.changeBins)
 
     def loadSettings(self):
         """Load window state from self.settings"""
@@ -108,6 +116,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         self.saveSettings()
         self.shaper.saveSettings()
-        self.frame_grabber.close()
+        #self.frame_grabber.close()
         self.roi_editor.saveSettings()
         super(MainWindow, self).closeEvent(event)
+
+    def handleFrameGrabbed(self, new_image):
+        self.image_view.handleImageChanged(new_image)
+        roi = self.roi_editor.getROI()
+        roi_slice = imtools.getROISlice(new_image, roi)
+        self.plot_1d.handleDataChanged(x=None, data=roi_slice[1], fit=None)
+        self.optimizer.handleImageChanged(roi_slice)

@@ -14,7 +14,9 @@ class Plot1d(pg.PlotWidget):
         self.pFit = self.plot()  # to plot fits
         self.pFit.setPen((255, 0, 0))
 
-    def handleDataChanged(self, x, data, fit):
+    def handleDataChanged(self, x=None, data=None, fit=None):
+        if x is None:
+            x = np.arange(len(data))
         self.pData.setData(x=x, y=data)
 
         if fit is None:
